@@ -49,6 +49,14 @@ Screenshot
 
 [![screenshot]
 
+## Roadmap 🗺️
+
+[ ] Customization for colors, decoration etc.
+[ ] onTap callback and page number.
+[ ] Different layouts and scroll axises.
+[ ] Caching.
+
+
 [flutter_install_link]: https://docs.flutter.dev/get-started/install
 [github_actions_link]: https://docs.github.com/en/actions/learn-github-actions
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
