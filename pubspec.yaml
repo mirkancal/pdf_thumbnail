@@ -1,5 +1,5 @@
 name: pdf_thumbnail
-description: Thumbnail viewer for pdfs
+description: Thumbnail viewer for PDF files. Supports Android and iOS. Simply add widget and give the file path.
 version: 0.1.0+1
 homepage: https://github.com/mirkancal/pdf_thumbnail
 documentation: https://github.com/mirkancal/pdf_thumbnail/blob/main/README.md
