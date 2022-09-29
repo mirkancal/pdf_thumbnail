@@ -1,11 +1,12 @@
 name: pdf_thumbnail
 description: Thumbnail viewer for pdfs
 version: 0.1.0+1
-publish_to: none
+homepage: https://github.com/mirkancal/pdf_thumbnail
+documentation: https://github.com/mirkancal/pdf_thumbnail/blob/main/README.md
 
 environment:
   sdk: ">=2.18.0 <3.0.0"
-  flutter: 3.3.2
+  flutter: '>=3.0.0'
 
 dependencies:
   flutter:
