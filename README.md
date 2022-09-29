@@ -47,14 +47,15 @@ flutter packages get
 
 Screenshot
 
-[![screenshot]
+![screenshot]
 
 ## Roadmap 🗺️
 
-[ ] Customization for colors, decoration etc.
-[ ] onTap callback and page number.
-[ ] Different layouts and scroll axises.
-[ ] Caching.
+
+- [ ] Customization for colors, decoration etc.
+- [ ] onTap callback and page number.
+- [ ] Different layouts and scroll axises.
+- [ ] Caching.
 
 
 [flutter_install_link]: https://docs.flutter.dev/get-started/install
