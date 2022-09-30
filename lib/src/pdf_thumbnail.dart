@@ -9,6 +9,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
+/// Callback when the user taps on a thumbnail
+typedef ThumbnailPageCallback = void Function(int page);
+
 /// {@template pdf_thumbnail}
 /// Thumbnail viewer for pdfs
 /// {@endtemplate}
@@ -24,12 +27,16 @@ class PdfThumbnail extends StatefulWidget {
     Key? key,
     Color? backgroundColor,
     double? height,
+    ThumbnailPageCallback? onPageClicked,
+    required int currentPage,
   }) {
     return PdfThumbnail._(
       key: key,
       path: path,
       backgroundColor: backgroundColor ?? Colors.black,
       height: height ?? 200,
+      onPageClicked: onPageClicked,
+      currentPage: currentPage,
     );
   }
   const PdfThumbnail._({
@@ -37,6 +44,8 @@ class PdfThumbnail extends StatefulWidget {
     this.path,
     this.backgroundColor,
     required this.height,
+    this.onPageClicked,
+    required this.currentPage,
   });
 
   /// File path
@@ -47,6 +56,12 @@ class PdfThumbnail extends StatefulWidget {
 
   /// Height
   final double height;
+
+  /// Callback to run when a page is clicked
+  final ThumbnailPageCallback? onPageClicked;
+
+  /// Current page
+  final int currentPage;
 
   @override
   State<PdfThumbnail> createState() => _PdfThumbnailState();
@@ -99,21 +114,26 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
               scrollDirection: Axis.horizontal,
               itemCount: images.length,
               itemBuilder: (context, index) {
+                final isCurrentPage = index + 1 == widget.currentPage;
                 final pageNumber = index + 1;
                 final image = images[pageNumber];
                 if (image == null) {
                   return const SizedBox();
                 }
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border.all(
+                return GestureDetector(
+                  onTap: () => widget.onPageClicked?.call(pageNumber),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isCurrentPage ? Colors.orange : Colors.white,
+                          width: 4,
+                        ),
                         color: Colors.white,
                       ),
-                      color: Colors.white,
+                      child: Image.memory(image),
                     ),
-                    child: Image.memory(image),
                   ),
                 );
               },
