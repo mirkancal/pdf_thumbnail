@@ -45,9 +45,11 @@ flutter packages get
             );
 ```
 
-Screenshot
+Demo
 
-![screenshot]
+<!-- ![screenshot] -->
+
+![gif]
 
 ## Roadmap 🗺️
 
@@ -74,3 +76,4 @@ Screenshot
 [very_good_ventures_link_dark]: https://verygood.ventures#gh-dark-mode-only
 [very_good_workflows_link]: https://github.com/VeryGoodOpenSource/very_good_workflows
 [screenshot]: https://ucarecdn.com/53fdf6c0-a1ce-4513-af9e-ab9ec2f2b842/-/preview/1000x400/-/format/auto/-/quality/smart_retina/
+[gif]: https://media.giphy.com/media/D58yM6RFV1AOxV8Y86/giphy.gif
