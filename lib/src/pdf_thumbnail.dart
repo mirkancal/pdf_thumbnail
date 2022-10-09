@@ -26,9 +26,11 @@ class PdfThumbnail extends StatefulWidget {
     String path, {
     Key? key,
     Color? backgroundColor,
+    BoxDecoration? currentPageDecoration,
     double? height,
     ThumbnailPageCallback? onPageClicked,
     required int currentPage,
+    Widget? loadingIndicator,
   }) {
     return PdfThumbnail._(
       key: key,
@@ -37,6 +39,18 @@ class PdfThumbnail extends StatefulWidget {
       height: height ?? 200,
       onPageClicked: onPageClicked,
       currentPage: currentPage,
+      currentPageDecoration: currentPageDecoration ??
+          BoxDecoration(
+            color: Colors.white,
+            border: Border.all(
+              color: Colors.blue,
+              width: 4,
+            ),
+          ),
+      loadingIndicator: loadingIndicator ??
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
     );
   }
   const PdfThumbnail._({
@@ -46,6 +60,8 @@ class PdfThumbnail extends StatefulWidget {
     required this.height,
     this.onPageClicked,
     required this.currentPage,
+    this.currentPageDecoration,
+    this.loadingIndicator,
   });
 
   /// File path
@@ -54,14 +70,20 @@ class PdfThumbnail extends StatefulWidget {
   /// Background color
   final Color? backgroundColor;
 
+  /// Decoration for current page
+  final BoxDecoration? currentPageDecoration;
+
   /// Height
   final double height;
 
   /// Callback to run when a page is clicked
   final ThumbnailPageCallback? onPageClicked;
 
-  /// Current page
+  /// Current page, index + 1
   final int currentPage;
+
+  /// Loading indicator
+  final Widget? loadingIndicator;
 
   @override
   State<PdfThumbnail> createState() => _PdfThumbnailState();
@@ -70,14 +92,14 @@ class PdfThumbnail extends StatefulWidget {
 class _PdfThumbnailState extends State<PdfThumbnail> {
   @override
   void initState() {
-    imagesFuture = compute(_render, widget.path!);
+    imagesFuture = _render();
     super.initState();
   }
 
-  Future<Map<int, Uint8List>> _render(String filePath) async {
+  Future<Map<int, Uint8List>> _render() async {
     final images = <int, Uint8List>{};
     try {
-      final document = await PdfDocument.openFile(filePath);
+      final document = await PdfDocument.openFile(widget.path!);
       for (var pageNumber = 1;
           pageNumber <= document.pagesCount;
           pageNumber++) {
@@ -114,24 +136,22 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
               scrollDirection: Axis.horizontal,
               itemCount: images.length,
               itemBuilder: (context, index) {
-                final isCurrentPage = index + 1 == widget.currentPage;
                 final pageNumber = index + 1;
+                final isCurrentPage = pageNumber == widget.currentPage;
                 final image = images[pageNumber];
                 if (image == null) {
                   return const SizedBox();
                 }
                 return GestureDetector(
-                  onTap: () => widget.onPageClicked?.call(pageNumber),
+                  onTap: () => widget.onPageClicked?.call(index),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isCurrentPage ? Colors.orange : Colors.white,
-                          width: 4,
-                        ),
-                        color: Colors.white,
-                      ),
+                      decoration: isCurrentPage
+                          ? widget.currentPageDecoration!
+                          : const BoxDecoration(
+                              color: Colors.white,
+                            ),
                       child: Image.memory(image),
                     ),
                   ),
@@ -139,9 +159,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
               },
             );
           } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return widget.loadingIndicator!;
           }
         },
       ),
