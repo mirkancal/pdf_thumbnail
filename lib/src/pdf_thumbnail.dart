@@ -70,14 +70,14 @@ class PdfThumbnail extends StatefulWidget {
 class _PdfThumbnailState extends State<PdfThumbnail> {
   @override
   void initState() {
-    imagesFuture = _render();
+    imagesFuture = compute(_render, widget.path!);
     super.initState();
   }
 
-  Future<Map<int, Uint8List>> _render() async {
+  Future<Map<int, Uint8List>> _render(String filePath) async {
     final images = <int, Uint8List>{};
     try {
-      final document = await PdfDocument.openFile(widget.path!);
+      final document = await PdfDocument.openFile(filePath);
       for (var pageNumber = 1;
           pageNumber <= document.pagesCount;
           pageNumber++) {
