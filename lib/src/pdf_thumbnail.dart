@@ -23,15 +23,15 @@ class PdfThumbnail extends StatefulWidget {
 
   /// Creates a [PdfThumbnail] from a file.
   factory PdfThumbnail.fromFile(
-    String path, {
-    Key? key,
-    Color? backgroundColor,
-    BoxDecoration? currentPageDecoration,
-    double? height,
-    ThumbnailPageCallback? onPageClicked,
-    required int currentPage,
-    Widget? loadingIndicator,
-  }) {
+      String path, {
+        Key? key,
+        Color? backgroundColor,
+        BoxDecoration? currentPageDecoration,
+        double? height,
+        ThumbnailPageCallback? onPageClicked,
+        required int currentPage,
+        Widget? loadingIndicator,
+      }) {
     return PdfThumbnail._(
       key: key,
       path: path,
@@ -90,78 +90,122 @@ class PdfThumbnail extends StatefulWidget {
 }
 
 class _PdfThumbnailState extends State<PdfThumbnail> {
+  ScrollController scrollController = ScrollController();
+
   @override
   void initState() {
-    imagesFuture = _render();
     super.initState();
+    getThumbnails(widget.path!, 10);
+    // trigger getThumbnail() to get more image when user is about to scroll to the end of the list (at 75%)
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+          (scrollController.position.maxScrollExtent * .75)) {
+        getThumbnails(widget.path!, 10);
+      }
+    });
   }
 
-  Future<Map<int, Uint8List>> _render() async {
-    final images = <int, Uint8List>{};
-    try {
-      final document = await PdfDocument.openFile(widget.path!);
-      for (var pageNumber = 1;
-          pageNumber <= document.pagesCount;
-          pageNumber++) {
-        final page = await document.getPage(pageNumber);
-        final pageImage = await page.render(
-          width: page.width,
-          height: page.height,
-        );
-        images[pageNumber] = pageImage!.bytes;
-        await page.close();
+  final images = <int, Uint8List>{};
+  int currentPage = 1;
+  int endPage = 1;
+  bool loading = false;
+  List<Widget> list = [];
+
+  Future<void> getThumbnails(String filePath, int length) async {
+    if (!loading) {
+      loading = true;
+      try {
+        final document = await PdfDocument.openFile(filePath);
+        final totalPage = document.pagesCount;
+        if (currentPage <= (totalPage - length)) {
+          endPage = currentPage + length + 1;
+        } else if ((currentPage < totalPage) &&
+            (currentPage + length > totalPage)) {
+          endPage = totalPage + 1;
+        }
+        for (; currentPage <= endPage; currentPage++) {
+          final page = await document.getPage(currentPage);
+          final pageImage = await page.render(
+            width: page.width,
+            height: page.height,
+            quality: 10,
+          );
+          images[currentPage] = pageImage!.bytes;
+          final outPageNumber = currentPage - 1;
+          final isCurrentPage = outPageNumber + 1 == widget.currentPage;
+
+          list.add(
+            GestureDetector(
+              onTap: () => widget.onPageClicked!(outPageNumber),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Stack(
+                  children: [
+                    Container(
+                      color: Colors.white,
+                      height: 200,
+                      width: 124,
+                    ),
+                    DecoratedBox(
+                      decoration: isCurrentPage
+                          ? widget.currentPageDecoration!
+                          : const BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      child: Image.memory(images[currentPage]!),
+                    ),
+                    Positioned(
+                      bottom: 5,
+                      left: 5,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 3, horizontal: 8,),
+                          child: Text(
+                            currentPage.toString(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          await page.close();
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print(e);
+        }
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
+      setState(() {
+        list = list;
+      });
+      loading = false;
     }
-    return images;
   }
 
-  late Future<Map<int, Uint8List>> imagesFuture;
+  //late Future<Map<int, Uint8List>> imagesFuture;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: widget.height,
       color: widget.backgroundColor,
-      child: FutureBuilder<Map<int, Uint8List>>(
-        future: imagesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final images = snapshot.data!;
-            return ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: widget.height * 0.1),
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                final pageNumber = index + 1;
-                final isCurrentPage = pageNumber == widget.currentPage;
-                final image = images[pageNumber];
-                if (image == null) {
-                  return const SizedBox();
-                }
-                return GestureDetector(
-                  onTap: () => widget.onPageClicked?.call(index),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: DecoratedBox(
-                      decoration: isCurrentPage
-                          ? widget.currentPageDecoration!
-                          : const BoxDecoration(
-                              color: Colors.white,
-                            ),
-                      child: Image.memory(image),
-                    ),
-                  ),
-                );
-              },
-            );
-          } else {
-            return widget.loadingIndicator!;
-          }
-        },
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: list.isEmpty
+            ? widget.loadingIndicator!
+            : ListView(
+          controller: scrollController,
+          scrollDirection: Axis.horizontal,
+          children: list.toList(growable: true),
+        ),
       ),
     );
   }
