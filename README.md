@@ -51,13 +51,33 @@ Demo
 
 ![gif]
 
+## Caching ⏲
+I left caching part opinionated to keep the package simple. Just create your own class from `ImageThumbnailCacher` and implement the `read/write` methods.
+Holding images as Uint8List, so `Map<int, Uint8List>` is what's need to be written and read to cache. Map for page number to images.
+
+```dart
+class ThumbnailCacher implements ImageThumbnailCacher {
+  @override
+  Future<PageToImage?> read(String id) async {
+    return api.localStorage.readThumbnails(id);
+  }
+
+  @override
+  Future<bool> write({required String id, required PageToImage map}) {
+    return api.localStorage.writeThumbnails(id: id, map: map);
+  }
+}
+```
+I'm using Hive to cache.
+
 ## Roadmap 🗺️
 
 
-- [ ] Customization for colors, decoration etc.
-- [ ] onTap callback and page number.
+- [X] Customization for colors, decoration etc.
+- [X] onTap callback and page number.
+- [X] Caching.
 - [ ] Different layouts and scroll axises.
-- [ ] Caching.
+- [ ] Lazy loading.
 
 
 [flutter_install_link]: https://docs.flutter.dev/get-started/install
