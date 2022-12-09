@@ -5,8 +5,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
@@ -38,6 +36,7 @@ class PdfThumbnail extends StatefulWidget {
     required int currentPage,
     Widget? loadingIndicator,
     ImageThumbnailCacher? cacher,
+    bool? scrollToCurrentPage,
   }) {
     return PdfThumbnail._(
       key: key,
@@ -61,6 +60,7 @@ class PdfThumbnail extends StatefulWidget {
             child: CircularProgressIndicator(),
           ),
       cacher: cacher,
+      scrollToCurrentPage: scrollToCurrentPage ?? false,
     );
   }
   const PdfThumbnail._({
@@ -74,6 +74,7 @@ class PdfThumbnail extends StatefulWidget {
     this.loadingIndicator,
     this.currentPageWidget,
     this.cacher,
+    this.scrollToCurrentPage = false,
   });
 
   /// File path
@@ -104,14 +105,27 @@ class PdfThumbnail extends StatefulWidget {
   /// Interface to manage caching
   final ImageThumbnailCacher? cacher;
 
+  /// Whether page browser will scroll to the current page or not,
+  /// false by default
+  final bool scrollToCurrentPage;
+
   @override
   State<PdfThumbnail> createState() => _PdfThumbnailState();
 }
 
 class _PdfThumbnailState extends State<PdfThumbnail> {
+  late ScrollController controller;
   @override
   void initState() {
-    imagesFuture = _render(widget.path!, widget.cacher);
+    controller = ScrollController();
+    imagesFuture = _render(widget.path!, widget.cacher)
+      ..then((value) async {
+        if (widget.scrollToCurrentPage) {
+          WidgetsBinding.instance.addPostFrameCallback((timestamp) {
+            swipeToPage(widget.currentPage, value.length);
+          });
+        }
+      });
     super.initState();
   }
 
@@ -128,6 +142,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
           if (snapshot.hasData) {
             final images = snapshot.data!;
             return ListView.builder(
+              controller: controller,
               padding: EdgeInsets.symmetric(vertical: widget.height * 0.1),
               scrollDirection: Axis.horizontal,
               itemCount: images.length,
@@ -145,6 +160,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
                     child: Stack(
                       children: [
                         DecoratedBox(
+                          key: Key('thumbnail_$pageNumber'),
                           decoration: isCurrentPage
                               ? widget.currentPageDecoration!
                               : const BoxDecoration(
@@ -165,6 +181,24 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
         },
       ),
     );
+  }
+
+  void swipeToPage(int page, int itemCount) {
+    final contentSize = controller.position.viewportDimension +
+        controller.position.maxScrollExtent;
+    final index = page - 1;
+    final target = contentSize * index / itemCount;
+    controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }
 
