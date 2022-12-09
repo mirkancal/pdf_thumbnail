@@ -1,3 +1,7 @@
+# 0.1.3+1
+
+- feat: add caching
+- feat: add scroll to current page option
 # 0.1.2+1
 
 - feat: custom loading indicator and selected page decoration
