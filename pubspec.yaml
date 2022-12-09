@@ -1,17 +1,17 @@
 name: pdf_thumbnail
 description: Thumbnail viewer for PDF files. Supports Android and iOS. Simply add widget and give the file path.
-version: 0.1.1+1
+version: 0.1.2+1
 homepage: https://github.com/mirkancal/pdf_thumbnail
 documentation: https://github.com/mirkancal/pdf_thumbnail/blob/main/README.md
 
 environment:
   sdk: ">=2.18.0 <3.0.0"
-  flutter: '>=3.0.0'
+  flutter: ">=3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  pdfx: ^2.2.0
+  pdfx: ^2.3.0
 
 dev_dependencies:
   flutter_test:
