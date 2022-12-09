@@ -5,12 +5,17 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
 /// Callback when the user taps on a thumbnail
 typedef ThumbnailPageCallback = void Function(int page);
+
+/// Function that returns page number widget
+typedef CurrentPageWidget = Widget Function(int page, bool isCurrentPage);
 
 /// {@template pdf_thumbnail}
 /// Thumbnail viewer for pdfs
@@ -27,10 +32,12 @@ class PdfThumbnail extends StatefulWidget {
     Key? key,
     Color? backgroundColor,
     BoxDecoration? currentPageDecoration,
+    CurrentPageWidget? currentPageWidget,
     double? height,
     ThumbnailPageCallback? onPageClicked,
     required int currentPage,
     Widget? loadingIndicator,
+    ImageThumbnailCacher? cacher,
   }) {
     return PdfThumbnail._(
       key: key,
@@ -39,6 +46,8 @@ class PdfThumbnail extends StatefulWidget {
       height: height ?? 200,
       onPageClicked: onPageClicked,
       currentPage: currentPage,
+      currentPageWidget:
+          currentPageWidget ?? (page, isCurrent) => const SizedBox(),
       currentPageDecoration: currentPageDecoration ??
           BoxDecoration(
             color: Colors.white,
@@ -51,6 +60,7 @@ class PdfThumbnail extends StatefulWidget {
           const Center(
             child: CircularProgressIndicator(),
           ),
+      cacher: cacher,
     );
   }
   const PdfThumbnail._({
@@ -62,6 +72,8 @@ class PdfThumbnail extends StatefulWidget {
     required this.currentPage,
     this.currentPageDecoration,
     this.loadingIndicator,
+    this.currentPageWidget,
+    this.cacher,
   });
 
   /// File path
@@ -72,6 +84,10 @@ class PdfThumbnail extends StatefulWidget {
 
   /// Decoration for current page
   final BoxDecoration? currentPageDecoration;
+
+  /// Simple function that returns widget that shows the page number.
+  /// Widget will be in [Stack] so you can use [Positioned] or [Align]
+  final CurrentPageWidget? currentPageWidget;
 
   /// Height
   final double height;
@@ -85,6 +101,9 @@ class PdfThumbnail extends StatefulWidget {
   /// Loading indicator
   final Widget? loadingIndicator;
 
+  /// Interface to manage caching
+  final ImageThumbnailCacher? cacher;
+
   @override
   State<PdfThumbnail> createState() => _PdfThumbnailState();
 }
@@ -92,31 +111,8 @@ class PdfThumbnail extends StatefulWidget {
 class _PdfThumbnailState extends State<PdfThumbnail> {
   @override
   void initState() {
-    imagesFuture = _render();
+    imagesFuture = _render(widget.path!, widget.cacher);
     super.initState();
-  }
-
-  Future<Map<int, Uint8List>> _render() async {
-    final images = <int, Uint8List>{};
-    try {
-      final document = await PdfDocument.openFile(widget.path!);
-      for (var pageNumber = 1;
-          pageNumber <= document.pagesCount;
-          pageNumber++) {
-        final page = await document.getPage(pageNumber);
-        final pageImage = await page.render(
-          width: page.width,
-          height: page.height,
-        );
-        images[pageNumber] = pageImage!.bytes;
-        await page.close();
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
-    }
-    return images;
   }
 
   late Future<Map<int, Uint8List>> imagesFuture;
@@ -146,13 +142,18 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
                   onTap: () => widget.onPageClicked?.call(index),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: DecoratedBox(
-                      decoration: isCurrentPage
-                          ? widget.currentPageDecoration!
-                          : const BoxDecoration(
-                              color: Colors.white,
-                            ),
-                      child: Image.memory(image),
+                    child: Stack(
+                      children: [
+                        DecoratedBox(
+                          decoration: isCurrentPage
+                              ? widget.currentPageDecoration!
+                              : const BoxDecoration(
+                                  color: Colors.white,
+                                ),
+                          child: Image.memory(image),
+                        ),
+                        widget.currentPageWidget!(pageNumber, isCurrentPage),
+                      ],
                     ),
                   ),
                 );
@@ -166,3 +167,49 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
     );
   }
 }
+
+Future<Map<int, Uint8List>> _render(
+    String filePath, ImageThumbnailCacher? cacher) async {
+  final images = <int, Uint8List>{};
+  try {
+    if (cacher != null) {
+      final cached = await cacher.read(filePath);
+      if (cached != null && cached.isNotEmpty) {
+        return cached;
+      }
+    }
+    final document = await PdfDocument.openFile(filePath);
+    for (var pageNumber = 1; pageNumber <= document.pagesCount; pageNumber++) {
+      final page = await document.getPage(pageNumber);
+      final pageImage = await page.render(
+        width: page.width,
+        height: page.height,
+      );
+      images[pageNumber] = pageImage!.bytes;
+      await page.close();
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print(e);
+    }
+  }
+  if (cacher != null) {
+    await cacher.write(id: filePath, map: images);
+  }
+  return images;
+}
+
+/// Interface for caching thumbnails
+abstract class ImageThumbnailCacher {
+  /// Read from cache
+  Future<PageToImage?> read(String id);
+
+  /// Write to cache
+  Future<bool> write({
+    required String id,
+    required PageToImage map,
+  });
+}
+
+/// Page to image map
+typedef PageToImage = Map<int, Uint8List>;
