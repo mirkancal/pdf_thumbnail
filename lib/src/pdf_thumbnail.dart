@@ -203,7 +203,9 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
 }
 
 Future<Map<int, Uint8List>> _render(
-    String filePath, ImageThumbnailCacher? cacher) async {
+  String filePath,
+  ImageThumbnailCacher? cacher,
+) async {
   final images = <int, Uint8List>{};
   try {
     if (cacher != null) {

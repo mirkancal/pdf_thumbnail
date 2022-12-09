@@ -7,8 +7,6 @@
 
 // ignore_for_file: prefer_const_constructors
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:pdf_thumbnail/pdf_thumbnail.dart';
 
 // void main() {
 //   group('PdfThumbnail', () {
