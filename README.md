@@ -52,7 +52,7 @@ Demo
 ![gif]
 
 ## Caching ⏲
-I left caching part opinionated to keep the package simple. Just create your own class from `ImageThumbnailCacher` and implement the `read/write` methods.
+I left caching part unopinionated to keep the package simple. Just create your own class from `ImageThumbnailCacher` and implement the `read/write` methods.
 Holding images as Uint8List, so `Map<int, Uint8List>` is what's need to be written and read to cache. Map for page number to images.
 
 ```dart
