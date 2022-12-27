@@ -1,3 +1,8 @@
+# 0.1.5+1
+
+- feat: add close button
+- add: example app
+
 # 0.1.4+1
 
 - update: readme
