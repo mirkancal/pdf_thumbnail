@@ -45,6 +45,9 @@ flutter packages get
             );
 ```
 
+There is a detailed example app in the repo, but I've deleted iOS and Android folders.
+Simple go to example folder, and run `flutter create .` inside the folder to add missing native files for the example app.
+
 Demo
 
 <!-- ![screenshot] -->
