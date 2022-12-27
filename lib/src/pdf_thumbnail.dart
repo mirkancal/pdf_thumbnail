@@ -37,6 +37,7 @@ class PdfThumbnail extends StatefulWidget {
     Widget? loadingIndicator,
     ImageThumbnailCacher? cacher,
     bool? scrollToCurrentPage,
+    Widget? closeButton,
   }) {
     return PdfThumbnail._(
       key: key,
@@ -61,6 +62,7 @@ class PdfThumbnail extends StatefulWidget {
           ),
       cacher: cacher,
       scrollToCurrentPage: scrollToCurrentPage ?? false,
+      closeButton: closeButton,
     );
   }
   const PdfThumbnail._({
@@ -75,6 +77,7 @@ class PdfThumbnail extends StatefulWidget {
     this.currentPageWidget,
     this.cacher,
     this.scrollToCurrentPage = false,
+    this.closeButton,
   });
 
   /// File path
@@ -101,6 +104,9 @@ class PdfThumbnail extends StatefulWidget {
 
   /// Loading indicator
   final Widget? loadingIndicator;
+
+  /// Close button
+  final Widget? closeButton;
 
   /// Interface to manage caching
   final ImageThumbnailCacher? cacher;
@@ -133,53 +139,59 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: widget.height,
-      color: widget.backgroundColor,
-      child: FutureBuilder<Map<int, Uint8List>>(
-        future: imagesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final images = snapshot.data!;
-            return ListView.builder(
-              controller: controller,
-              padding: EdgeInsets.symmetric(vertical: widget.height * 0.1),
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                final pageNumber = index + 1;
-                final isCurrentPage = pageNumber == widget.currentPage;
-                final image = images[pageNumber];
-                if (image == null) {
-                  return const SizedBox();
-                }
-                return GestureDetector(
-                  onTap: () => widget.onPageClicked?.call(index),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Stack(
-                      children: [
-                        DecoratedBox(
-                          key: Key('thumbnail_$pageNumber'),
-                          decoration: isCurrentPage
-                              ? widget.currentPageDecoration!
-                              : const BoxDecoration(
-                                  color: Colors.white,
-                                ),
-                          child: Image.memory(image),
+    return Column(
+      children: [
+        if (widget.closeButton != null) widget.closeButton!,
+        Container(
+          height: widget.height,
+          color: widget.backgroundColor,
+          child: FutureBuilder<Map<int, Uint8List>>(
+            future: imagesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final images = snapshot.data!;
+                return ListView.builder(
+                  controller: controller,
+                  padding: EdgeInsets.symmetric(vertical: widget.height * 0.1),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: images.length,
+                  itemBuilder: (context, index) {
+                    final pageNumber = index + 1;
+                    final isCurrentPage = pageNumber == widget.currentPage;
+                    final image = images[pageNumber];
+                    if (image == null) {
+                      return const SizedBox();
+                    }
+                    return GestureDetector(
+                      onTap: () => widget.onPageClicked?.call(index),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Stack(
+                          children: [
+                            DecoratedBox(
+                              key: Key('thumbnail_$pageNumber'),
+                              decoration: isCurrentPage
+                                  ? widget.currentPageDecoration!
+                                  : const BoxDecoration(
+                                      color: Colors.white,
+                                    ),
+                              child: Image.memory(image),
+                            ),
+                            widget.currentPageWidget!(
+                                pageNumber, isCurrentPage),
+                          ],
                         ),
-                        widget.currentPageWidget!(pageNumber, isCurrentPage),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
-              },
-            );
-          } else {
-            return widget.loadingIndicator!;
-          }
-        },
-      ),
+              } else {
+                return widget.loadingIndicator!;
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
